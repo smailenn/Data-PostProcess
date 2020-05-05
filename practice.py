@@ -16,8 +16,8 @@ accel_raw_scale_pos = 32768 #raw value range positive values
 AS = 'y' # Accel Set 
 
 #read the data into an array from text file
-#dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing Test\\WAXWING01.txt', sep='\t')
-dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD01.txt', sep='\t')
+dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing Test\\WAXWING01.txt', sep='\t')
+#dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt', sep='\t')
 #dataframe = pd.read_excel('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data Vert.xlsx')
 
 #get info about the array
@@ -73,6 +73,8 @@ Sensor1z_g = Sensor1z_g[trim_beg:trim_end]
 Sensor2x_g = Sensor2x_g[trim_beg:trim_end]
 Sensor2y_g = Sensor2y_g[trim_beg:trim_end]
 Sensor2z_g = Sensor2z_g[trim_beg:trim_end]
+trim_size = trim_end - trim_beg
+print('Size of array after trim =', trim_size)
 
 #Analyze the Arrays ============================================================================================================
 # Find Average of sensor data
@@ -125,15 +127,75 @@ print('X Axis Transmissibility =', Trans_x, '%')
 print('Y Axis Transmissibility =', Trans_y, '%')
 print('Z Axis Transmissibility =', Trans_z, '%')
 
+#Additonal statistics
+S1yMedian = np.median(Sensor1y_g)
+S2yMedian = np.median(Sensor2y_g)
+print('Sensor 1 Y Axis Median =', S1yMedian)
+print('Sensor 2 Y Axis Median =', S2yMedian)
+S1yP2P = S1yMAX - S1yMIN
+S2yP2P = S2yMAX - S1yMIN
+print('Sensor 1 P2P =', S1yP2P)
+print('Sensor 2 P2P =', S2yP2P)
+
+
+
 #make some plots
-fig, axs = plt.subplots(2)
-plt.plot(time, Sensor2y_g, label = 'Axle Sensor - Y', color='r')
-plt.plot(time, Sensor1y_g, label = 'Handlebar Sensor - Y')
-#plt.plot(time, Sensor2x_g, time, Sensor2y_g)
-plt.axis([0, 230, -16, 16])  #Trim X Axis to show only good ride data
-plt.title('Vibration over Time (X Axis)')
-plt.xlabel('Time(S)')
-plt.ylabel('Gs')
-plt.legend()
+#Acceleration plots vs. time
+fig, (x1, y1, z1) = plt.subplots(3,1)  #Create one Figure with 3 plots
+fig.subplots_adjust(hspace=0.5) # extra space between plots
+fig.suptitle('Waxwing 01 Test Run')  # Give the figure a title
+x1 = plt.subplot(311)
+x1.plot(time, Sensor2x_g, label = 'Axle Sensor - X', color='r')
+x1.plot(time, Sensor1x_g, label = 'Handlebar Sensor - X')
+x1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+x1.set_title('Acceleration (X Axis)')
+x1.set_xlabel('Time(Sec)')
+x1.set_ylabel('G')
+x1.legend()
+
+y1 = plt.subplot(312)
+y1.plot(time, Sensor2y_g, label = 'Axle Sensor - Y', color='r')
+y1.plot(time, Sensor1y_g, label = 'Handlebar Sensor - Y')
+y1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+y1.set_title('Acceleration (Y Axis)')
+y1.set_xlabel('Time(Sec)')
+y1.set_ylabel('G')
+y1.legend()
+
+z1 = plt.subplot(313)
+z1.plot(time, Sensor2z_g, label = 'Axle Sensor - Z', color='r')
+z1.plot(time, Sensor1z_g, label = 'Handlebar Sensor - Z')
+z1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+z1.set_title('Acceleration (Z Axis)')
+z1.set_xlabel('Time(Sec)')
+z1.set_ylabel('G')
+z1.legend()
+
+#FFT plots
+# Set size of array for FFT, time and data arrays must equal
+X = 1
+N = 0
+while N < trim_size:
+    N =2**X
+    X += 1
+    #print(N)
+X-= 2
+N =2**X
+print(N)
+
+#FFT of Data
+ft = np.fft.fft(Sensor1y_g[0:N]) * time_int_avg  
+freq = np.fft.fftfreq(N, time[0:N])
+#freq = freq[:N//2+1]
+
+# plot results on an x-y scatter plot
+fig, (fftx, ffty, ffty) = plt.subplots(3,1)
+ffty = plt.subplot(312)
+ffty.plot(freq, np.abs(ft)) # comma indicates a pixel marker
+plt.xlabel('Frequency')
+plt.ylabel('amplitude')
+#plt.xlim([0, 15])
+#plt.ylim([0, 300])
+
+
 plt.show()
-plt.plot()
