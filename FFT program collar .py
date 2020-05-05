@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #read the data into an array from CSV file
-dataframe = pandas.read_csv(open('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing Test\\WAXWING00.txt', mode='r'))
+dataframe = pandas.read_csv(open('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing Test\\WAXWING00.txt', mode='t'))
 # dataframe = pandas.read_csv(open('C:\\Users\\SeanM\\OneDrive - Quality Bicycle Products\\Programs\\Cutthroat Vibration Data Vert .csv', mode='r'))
 
 arr = dataframe['Sensor 1 Y'].to_numpy()
