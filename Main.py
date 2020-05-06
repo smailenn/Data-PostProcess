@@ -2,6 +2,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import math 
 from numpy import savetxt
 from scipy import stats
 
@@ -41,7 +42,7 @@ time = time - time[0]  #Normalize time back to starting at 0
 time = time/1000000 #convert uS to S
 time_int = np.ediff1d(time)  # Find time intervals (time between measurements)
 time_int_avg = stats.trim_mean(time_int,0.1) # Trim time intervals of SD lag points, large time intervals during a SD write 
-print('Time Interval Average =', time_int_avg,'uS')
+print('Time Interval Average =', time_int_avg,'S')
 #savetxt('time_int.csv', time_int, delimiter=',')  # save Time Interval Array as CSV for review if needed
 print(len(time))
 
@@ -136,7 +137,12 @@ S1yP2P = S1yMAX - S1yMIN
 S2yP2P = S2yMAX - S1yMIN
 print('Sensor 1 P2P =', S1yP2P)
 print('Sensor 2 P2P =', S2yP2P)
-
+S1yRMS = math.sqrt(np.sum(Sensor1y_g**2)/trim_size)
+S2yRMS = math.sqrt(np.sum(Sensor2y_g**2)/trim_size)
+print('Sensor 1 RMS =', S1yRMS)
+print('Sensor 2 RMS =', S2yRMS)
+S1vs2RMS = ((S2yRMS-S1yRMS)/S2yRMS)*100
+print(S1vs2RMS, '% Reduction RMS')
 
 
 #make some plots
@@ -180,20 +186,42 @@ while N < trim_size:
     X += 1
     #print(N)
 X-= 2
-N =2**X
-print(N)
+N =2**X # Size of array for FFT
+print('N=', N)
 
 #FFT of Data
-ft = np.fft.fft(Sensor1y_g[0:N]) * time_int_avg  
-freq = np.fft.fftfreq(N, time[0:N])
+#Fs = 1/time_int_avg
+Fs = 2406 # Sample Rate
+print(Fs, 'Hz Sample Rate')
+T = (1/Fs) 
+print('T =', T)
+plt.figure(2)
+plt.plot(time, Sensor1y_g)
+
+plt.figure(3)
+print(')
+frequency = np.linspace(0.0, 1203, 131072)
+freq_data = np.fft.fft(Sensor1y_g[0:N])
+y = 2/N*np.abs(freq_data[0:131072])
+
+#xf = np.linspace(0.0, 1.0/(2.0*T), N/2)
+#xf = Fs/2
+#xf = np.linspace(0, 124, time)
+#yf = np.fft.fft(Sensor1y_g)
+#plt.plot(xf, 2.0/N * np.abs(yf[0:np.int(N/2)]))
+
+
+#ft = np.fft.fft(Sensor1y_g[0:N]) * time_int_avg  
+#freq = np.fft.fftfreq(N, time[0:N])
 #freq = freq[:N//2+1]
 
 # plot results on an x-y scatter plot
-fig, (fftx, ffty, ffty) = plt.subplots(3,1)
-ffty = plt.subplot(312)
-ffty.plot(freq, np.abs(ft)) # comma indicates a pixel marker
-plt.xlabel('Frequency')
-plt.ylabel('amplitude')
+plt.plot(frequency, y)
+#fig, (fftx, ffty, ffty) = plt.subplots(3,1)
+#ffty = plt.subplot(312)
+#ffty.plot(freq, np.abs(ft)) # comma indicates a pixel marker
+#plt.xlabel('Frequency')
+#plt.ylabel('amplitude')
 #plt.xlim([0, 15])
 #plt.ylim([0, 300])
 
