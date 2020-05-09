@@ -15,10 +15,9 @@ accel_raw_scale_neg = -32767 #raw value range negative values
 accel_raw_scale_pos = 32768 #raw value range positive values
 
 #What Accelerometers [data arrays] do you want to review?
-AS = 'y' # Accel Set 
 
 #read the data into an array from text file
-dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing Test\\WAXWING06.txt', sep='\t')
+dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing Test\\WAXWING01.txt', sep='\t')
 #dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt', sep='\t')
 #dataframe = pd.read_excel('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data Vert.xlsx')
 
@@ -233,6 +232,18 @@ plt.xlim([0, 400])
 plt.legend()
 plt.grid()
 
+#Data in frequency range Acceleration-> Displacement
+#Displacement_1Y = (freq_data_1 * 9810)/(2*pi()*)
+#plt.plot(frequency, fft_2, label = 'Axle Sensor', color='r')
+#plt.plot(frequency, fft_1, label = 'Handlebar Sensor')
+#plt.title('FFT')
+#plt.xlabel('Frequency (Hz)')
+#plt.ylabel('Amplitude')
+#plt.xlim([0, 400])
+#plt.ylim([0, 300])
+#plt.legend()
+#plt.grid()
+
 plt.figure(3)
 plt.hist(Sensor2y_g, bins='auto', label = "Handlebar Sensor", color = 'r')
 plt.hist(Sensor1y_g, bins='auto', label = 'Axle Sensor')
@@ -244,10 +255,25 @@ plt.legend()
 plt.grid()
 
 plt.figure(4)
-f, Pxx_den = signal.welch(Sensor1y_g, Fs)
-plt.semilogy(f, Pxx_den)
+plt.psd(Sensor2y_g, Fs= Fs, label = "Handlebar Sensor", color ='r')
+plt.psd(Sensor1y_g, Fs = Fs, label = 'Axle Sensor')
+#plt.xlim([0, 400])
+plt.title('Power Spectral Density')
+#f, Pxx_den = signal.welch(Sensor1y_g, Fs)
+#plt.semilogy(f, Pxx_den)
 #plt.ylim([0.5e-3, 1])
-plt.xlabel('frequency [Hz]')
-plt.ylabel('PSD [V**2/Hz]')
+#plt.xlabel('frequency [Hz]')
+#plt.ylabel('PSD [V**2/Hz]')
+plt.legend()
+plt.grid()
+
+plt.figure(5)
+plt.magnitude_spectrum(Sensor2y_g, Fs= Fs, label = "Handlebar Sensor", color ='r')
+plt.magnitude_spectrum(Sensor1y_g, Fs = Fs, label = 'Axle Sensor')
+plt.xlim([0, 400])
+plt.title('Magnitude Spectrum')
+plt.legend()
+plt.grid()
+
 plt.show()
-plt.show()
+
