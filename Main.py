@@ -17,7 +17,7 @@ accel_raw_scale_pos = 32768 #raw value range positive values
 #What Accelerometers [data arrays] do you want to review?
 
 #read the data into an array from text file
-dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing Test\\WAXWING01.txt', sep='\t')
+dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING01.txt', sep='\t')
 #dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt', sep='\t')
 #dataframe = pd.read_excel('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data Vert.xlsx')
 
