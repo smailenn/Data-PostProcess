@@ -6,10 +6,10 @@ import math
 from numpy import savetxt
 from scipy import stats
 from scipy import signal
+import os
 
 # what file do you want?
-#Folderpath = Waxwing test
-#filepath = WAXWING01
+File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING01.txt'
 
 #DTS or Arduino Data (Using LIS3dh)
 Arduino = 'Arduino'
@@ -19,25 +19,24 @@ Yes = None
 Sensor_select = 'Arduino'
 Trim_data = 'Yes'
 
+#Note this is typical layout!!!!!
 #Sensor 1 - upper sensor, at Handlebar
 #Sensor 2 - lower sensor, at Axle
-accel_range = 16 #What Range in G 2,4,8,16 g
-accel_raw_scale_neg = -32767 #raw value range negative values
-accel_raw_scale_pos = 32768 #raw value range positive values
-
-#What Accelerometers [data arrays] do you want to review?
 
 #read the data into an array from text file
 if Sensor_select == Arduino:
-    dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING01.txt', sep='\t')
+    dataframe = pd.read_csv(File_path, sep='\t')
     print('Arduino data selected')
+    filename = os.path.basename(File_path)
+    FN = os.path.splitext(filename)[0]
     #dataframe.info()
     #print(dataframe)
-#dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt', sep='\t')
 elif Sensor_select == DTS:
-    #dataframe_DTS = pd.read_excel('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data 2.xlsx')
-    dataframe_DTS = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data 2.csv')
+    #dataframe_DTS = pd.read_excel(File_path)
+    dataframe_DTS = pd.read_csv(File_path)
     print('DTS data selected')
+    filename = os.path.basename(File_path)
+    FN = os.path.splitext(filename)[0]
     #dataframe_DTS.info()
     #print(dataframe_DTS)
 else:
@@ -53,6 +52,9 @@ if Sensor_select == Arduino:
     Sensor2xRaw = dataframe["Sensor 2 X"]
     Sensor2yRaw = dataframe["Sensor 2 Y"]
     Sensor2zRaw = dataframe["Sensor 2 Z"]
+    accel_range = 16 #What Range in G 2,4,8,16 g
+    accel_raw_scale_neg = -32767 #raw value range negative values
+    accel_raw_scale_pos = 32768 #raw value range positive values
 #For DTS data logger
 if Sensor_select == DTS:
     time = dataframe_DTS["Time(s)"]
@@ -208,7 +210,7 @@ print('%.3f'% S1vs2RMS,'% Reduction RMS')
 #Acceleration plots vs. time
 fig, (x1, y1, z1) = plt.subplots(3,1)  #Create one Figure with 3 plots
 fig.subplots_adjust(hspace=0.5) # extra space between plots
-fig.suptitle('Waxwing 01 Test Run')  # Give the figure a title
+fig.suptitle("Acceleration over Time {}".format(FN))  # Give the figure a title
 x1 = plt.subplot(311)
 x1.plot(time, Sensor2x_g, label = 'Axle Sensor - X', color='r')
 x1.plot(time, Sensor1x_g, label = 'Handlebar Sensor - X')
@@ -232,7 +234,7 @@ y1.grid()
 z1 = plt.subplot(313)
 z1.plot(time, Sensor2z_g, label = 'Axle Sensor - Z', color='r')
 z1.plot(time, Sensor1z_g, label = 'Handlebar Sensor - Z')
-#z1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+z1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
 z1.set_title('Acceleration (Z Axis)')
 z1.set_xlabel('Time(Sec)')
 z1.set_ylabel('G')
@@ -264,7 +266,7 @@ fft_2 = 2/N*np.abs(freq_data_2[0:int(N/2)]) # Take abs value of Sensor[y]
 # plot results on an x-y scatter plot
 plt.plot(frequency, fft_2, label = 'Axle Sensor(Y) ', color='r')
 plt.plot(frequency, fft_1, label = 'Handlebar Sensor(Y)')
-plt.title('FFT - Y Axis')
+plt.title('FFT - Y Axis of {}'.format(FN))
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('Amplitude(G)')
 plt.xlim([0, 400])
@@ -287,7 +289,7 @@ plt.grid()
 plt.figure(3)
 plt.hist(Sensor2y_g, bins='auto', label = "Axle Sensor", color = 'r')
 plt.hist(Sensor1y_g, bins='auto', label = 'Handlebar Sensor')
-plt.title('Y Axis Histogram')
+plt.title('Histogram - Y Axis of {}'.format(FN))
 plt.xlabel('Acceleration (G)')
 plt.ylabel('Quantity')
 plt.xlim([-3,3])
@@ -298,7 +300,7 @@ plt.figure(4)
 plt.psd(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
 plt.psd(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
 #plt.xlim([0, 400])
-plt.title('Power Spectral Density')
+plt.title('Power Spectral Density - Y Axis of {}'.format(FN))
 #f, Pxx_den = signal.welch(Sensor1y_g, Fs)
 #plt.semilogy(f, Pxx_den)
 #plt.ylim([0.5e-3, 1])
@@ -311,7 +313,7 @@ plt.figure(5)
 plt.magnitude_spectrum(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
 plt.magnitude_spectrum(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
 plt.xlim([0, 400])
-plt.title('Magnitude Spectrum')
+plt.title('Magnitude Spectrum - Y Axis of {}'.format(FN))
 plt.legend()
 plt.grid()
 
