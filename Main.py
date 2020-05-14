@@ -7,7 +7,18 @@ from numpy import savetxt
 from scipy import stats
 from scipy import signal
 
-#Calibration variables and Accelerometer setup
+# what file do you want?
+#Folderpath = Waxwing test
+#filepath = WAXWING01
+
+#DTS or Arduino Data (Using LIS3dh)
+Arduino = 'Arduino'
+DTS = 'DTS'
+No = None
+Yes = None
+Sensor_select = 'Arduino'
+Trim_data = 'Yes'
+
 #Sensor 1 - upper sensor, at Handlebar
 #Sensor 2 - lower sensor, at Axle
 accel_range = 16 #What Range in G 2,4,8,16 g
@@ -17,65 +28,94 @@ accel_raw_scale_pos = 32768 #raw value range positive values
 #What Accelerometers [data arrays] do you want to review?
 
 #read the data into an array from text file
-dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING01.txt', sep='\t')
+if Sensor_select == Arduino:
+    dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING01.txt', sep='\t')
+    print('Arduino data selected')
+    #dataframe.info()
+    #print(dataframe)
 #dataframe = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt', sep='\t')
-#dataframe = pd.read_excel('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data Vert.xlsx')
-
-#get info about the array
-#type(dataframe)
-#dataframe.shape
-#dataframe.info()
-#print(dataframe)
-
+elif Sensor_select == DTS:
+    #dataframe_DTS = pd.read_excel('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data 2.xlsx')
+    dataframe_DTS = pd.read_csv('C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Cutthroat Vibration Data 2.csv')
+    print('DTS data selected')
+    #dataframe_DTS.info()
+    #print(dataframe_DTS)
+else:
+    print("No Data present")
+    
 #Seperate data into column arrays
-time = dataframe["Time"]
-Sensor1xRaw = dataframe["Sensor 1 X"]
-Sensor1yRaw = dataframe["Sensor 1 Y"]
-Sensor1zRaw = dataframe["Sensor 1 Z"]
-Sensor2xRaw = dataframe["Sensor 2 X"]
-Sensor2yRaw = dataframe["Sensor 2 Y"]
-Sensor2zRaw = dataframe["Sensor 2 Z"]
+#For Arduino type data logger
+if Sensor_select == Arduino:
+    time = dataframe["Time"]
+    Sensor1xRaw = dataframe["Sensor 1 X"]
+    Sensor1yRaw = dataframe["Sensor 1 Y"]
+    Sensor1zRaw = dataframe["Sensor 1 Z"]
+    Sensor2xRaw = dataframe["Sensor 2 X"]
+    Sensor2yRaw = dataframe["Sensor 2 Y"]
+    Sensor2zRaw = dataframe["Sensor 2 Z"]
+#For DTS data logger
+if Sensor_select == DTS:
+    time = dataframe_DTS["Time(s)"]
+    Sensor1x_g = dataframe_DTS["Seat Collar,X(Corrected)"]
+    Sensor1y_g = dataframe_DTS["Seat Collar,Vertical,Normalized"]
+    Sensor1z_g = dataframe_DTS["Seat Collar,Z(Corrected)"]
+    Sensor2x_g = dataframe_DTS["Rear Axle,X(Corrected)"]
+    Sensor2y_g = dataframe_DTS["Rear Axle,Vertical,Normalized"]
+    Sensor2z_g = dataframe_DTS["Rear Axle,Z"]
+
 
 #Time and Index review
-time = time - time[0]  #Normalize time back to starting at 0
-time = time/1000000 #convert uS to S
+if Sensor_select == Arduino: 
+    time = time - time[0]  #Normalize time back to starting at 0
+    time = time/1000000 #convert uS to S
+
 time_int = np.ediff1d(time)  # Find time intervals - this is array (time between measurements)
 time_int_avg = stats.trim_mean(time_int,0.1) # Trim time intervals of SD lag points, large time intervals during a SD write, this is scalar
-#print('Time Interval Average =', "%.8f"% time_int_avg,'S')
+print('Time Interval Average =', "%.8f"% time_int_avg,'S')
+time_Hz = 1/time_int_avg
+print('Sample Rate =', '%.2f'% time_Hz, 'Hz')
 #savetxt('time_int.csv', time_int, delimiter=',')  # save Time Interval Array as CSV for review if needed
 #print(len(time))
 
 #Calibrate, orientate, and Normalize readings to G's
 #Calculate offset values from calibration test at beginning of test runs, ideally done at same time as testing
-accel_g_unit = (accel_raw_scale_pos - accel_raw_scale_neg)/accel_range
-Sensor1x_offset = 63.5 
-Sensor1y_offset = -692 
-Sensor1z_offset = -22.6
-Sensor2x_offset = 12.6
-Sensor2y_offset = -769
-Sensor2z_offset = 98
-Calibrate_direction = -1 #multiply raw data by this to change trajectory to normal of drivetrain
-#Orientate sensors, calibrate, and convert to G's
-Sensor1x_g = ((Sensor1xRaw + Sensor1x_offset)*(accel_range/accel_raw_scale_pos))*Calibrate_direction
-Sensor1y_g = ((Sensor1yRaw + Sensor1y_offset)*(accel_range/accel_raw_scale_pos))+1
-Sensor1z_g = (Sensor1zRaw + Sensor1z_offset)*(accel_range/accel_raw_scale_pos)
-Sensor2x_g = (Sensor2xRaw + Sensor2x_offset)*(accel_range/accel_raw_scale_pos)
-Sensor2y_g = ((Sensor2yRaw + Sensor2y_offset)*(accel_range/accel_raw_scale_pos))+1
-Sensor2z_g = ((Sensor2zRaw + Sensor2z_offset)*(accel_range/accel_raw_scale_pos))*Calibrate_direction
+if Sensor_select == Arduino: 
+    accel_g_unit = (accel_raw_scale_pos - accel_raw_scale_neg)/accel_range
+    Sensor1x_offset = 63.5 
+    Sensor1y_offset = -692 
+    Sensor1z_offset = -22.6
+    Sensor2x_offset = 12.6
+    Sensor2y_offset = -769
+    Sensor2z_offset = 98
+    Calibrate_direction = -1 #multiply raw data by this to change trajectory to normal of drivetrain
+    print('data calibrated')
+    #Orientate sensors, calibrate, and convert to G's
+    Sensor1x_g = ((Sensor1xRaw + Sensor1x_offset)*(accel_range/accel_raw_scale_pos))*Calibrate_direction
+    Sensor1y_g = ((Sensor1yRaw + Sensor1y_offset)*(accel_range/accel_raw_scale_pos))+1
+    Sensor1z_g = (Sensor1zRaw + Sensor1z_offset)*(accel_range/accel_raw_scale_pos)
+    Sensor2x_g = (Sensor2xRaw + Sensor2x_offset)*(accel_range/accel_raw_scale_pos)
+    Sensor2y_g = ((Sensor2yRaw + Sensor2y_offset)*(accel_range/accel_raw_scale_pos))+1
+    Sensor2z_g = ((Sensor2zRaw + Sensor2z_offset)*(accel_range/accel_raw_scale_pos))*Calibrate_direction
+    print('data orientated + converted')
 
 #If needed trim the arrays for bad/false/faulty data
 #Trimming is based on # of samples, not in time array
-trim_beg = 0 #trim beginning of array
-trim_end = 300000  #trim end of array
-time = time[trim_beg:trim_end]
-Sensor1x_g = Sensor1x_g[trim_beg:trim_end]
-Sensor1y_g = Sensor1y_g[trim_beg:trim_end]
-Sensor1z_g = Sensor1z_g[trim_beg:trim_end]
-Sensor2x_g = Sensor2x_g[trim_beg:trim_end]
-Sensor2y_g = Sensor2y_g[trim_beg:trim_end]
-Sensor2z_g = Sensor2z_g[trim_beg:trim_end]
-trim_size = trim_end - trim_beg
-print('Size of array after trim =', trim_size,'samples')
+if Trim_data == 'Yes': 
+    trim_beg = 0 #trim beginning of array
+    trim_end = 300000  #trim end of array
+    time = time[trim_beg:trim_end]
+    Sensor1x_g = Sensor1x_g[trim_beg:trim_end]
+    Sensor1y_g = Sensor1y_g[trim_beg:trim_end]
+    Sensor1z_g = Sensor1z_g[trim_beg:trim_end]
+    Sensor2x_g = Sensor2x_g[trim_beg:trim_end]
+    Sensor2y_g = Sensor2y_g[trim_beg:trim_end]
+    Sensor2z_g = Sensor2z_g[trim_beg:trim_end]
+    trim_size = trim_end - trim_beg
+    print('Size of array after trim =', trim_size,'samples')
+else:
+    print('Data not trimmed')
+    print('Size of Array =',len(time))
+
 
 #Analyze the Arrays ============================================================================================================
 # Find Average of sensor data
@@ -154,10 +194,10 @@ S2yMedian = np.median(Sensor2y_g)
 #print('Sensor 2 Y Axis Median =', '%.5f'%  S2yMedian, 'G')
 S1yP2P = S1yMAX - S1yMIN
 S2yP2P = S2yMAX - S1yMIN
-print('Sensor 1 Total Range =', '%.5f'%  S1yP2P, 'G')
-print('Sensor 2 Total Range =', '%.5f'%  S2yP2P, 'G')
-S1yRMS = math.sqrt(np.sum(Sensor1y_g**2)/trim_size)
-S2yRMS = math.sqrt(np.sum(Sensor2y_g**2)/trim_size)
+print('Sensor 1 Y Total Range =', '%.5f'%  S1yP2P, 'G')
+print('Sensor 2 Y Total Range =', '%.5f'%  S2yP2P, 'G')
+S1yRMS = math.sqrt(np.sum(Sensor1y_g**2)/len(time))
+S2yRMS = math.sqrt(np.sum(Sensor2y_g**2)/len(time))
 print('Sensor 1 RMS =', '%.5f'%  S1yRMS, 'G')
 print('Sensor 2 RMS =', '%.5f'%  S2yRMS, 'G')
 S1vs2RMS = ((S2yRMS-S1yRMS)/S2yRMS)*100
@@ -187,12 +227,12 @@ y1.set_title('Acceleration (Y Axis)')
 y1.set_xlabel('Time(Sec)')
 y1.set_ylabel('G')
 y1.legend()
-z1.grid()
+y1.grid()
 
 z1 = plt.subplot(313)
 z1.plot(time, Sensor2z_g, label = 'Axle Sensor - Z', color='r')
 z1.plot(time, Sensor1z_g, label = 'Handlebar Sensor - Z')
-z1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+#z1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
 z1.set_title('Acceleration (Z Axis)')
 z1.set_xlabel('Time(Sec)')
 z1.set_ylabel('G')
@@ -204,7 +244,7 @@ plt.figure(2)
 # Set size of array for FFT (time and data arrays must equal)
 X = 1
 N = 0
-while N < trim_size:
+while N < len(time):
     N =2**X  #N must be a BASE-2 number less than total array size 
     X += 1
 X-= 2
@@ -213,7 +253,7 @@ print('FFT array size =', N)
 
 #FFT of Data
 Fs = int(1/time_int_avg)
-print(Fs, 'Hz Sample Rate')
+print(Fs, 'Hz Sample Rate for FFT')
 print('N/2 =', int(N/2))
 frequency = np.linspace(0.0, int(Fs/2), int(N/2))  #X Axis Frequency range
 freq_data_1 = np.fft.fft(Sensor1y_g[0:N])  #FFT of Sensor[x]
@@ -222,11 +262,11 @@ fft_1 = 2/N*np.abs(freq_data_1[0:int(N/2)]) # Take abs value of Sensor[x]
 fft_2 = 2/N*np.abs(freq_data_2[0:int(N/2)]) # Take abs value of Sensor[y] 
 
 # plot results on an x-y scatter plot
-plt.plot(frequency, fft_2, label = 'Axle Sensor', color='r')
-plt.plot(frequency, fft_1, label = 'Handlebar Sensor')
-plt.title('FFT')
+plt.plot(frequency, fft_2, label = 'Axle Sensor(Y) ', color='r')
+plt.plot(frequency, fft_1, label = 'Handlebar Sensor(Y)')
+plt.title('FFT - Y Axis')
 plt.xlabel('Frequency (Hz)')
-plt.ylabel('Amplitude')
+plt.ylabel('Amplitude(G)')
 plt.xlim([0, 400])
 #plt.ylim([0, 300])
 plt.legend()
@@ -245,8 +285,8 @@ plt.grid()
 #plt.grid()
 
 plt.figure(3)
-plt.hist(Sensor2y_g, bins='auto', label = "Handlebar Sensor", color = 'r')
-plt.hist(Sensor1y_g, bins='auto', label = 'Axle Sensor')
+plt.hist(Sensor2y_g, bins='auto', label = "Axle Sensor", color = 'r')
+plt.hist(Sensor1y_g, bins='auto', label = 'Handlebar Sensor')
 plt.title('Y Axis Histogram')
 plt.xlabel('Acceleration (G)')
 plt.ylabel('Quantity')
@@ -255,8 +295,8 @@ plt.legend()
 plt.grid()
 
 plt.figure(4)
-plt.psd(Sensor2y_g, Fs= Fs, label = "Handlebar Sensor", color ='r')
-plt.psd(Sensor1y_g, Fs = Fs, label = 'Axle Sensor')
+plt.psd(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
+plt.psd(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
 #plt.xlim([0, 400])
 plt.title('Power Spectral Density')
 #f, Pxx_den = signal.welch(Sensor1y_g, Fs)
@@ -268,8 +308,8 @@ plt.legend()
 plt.grid()
 
 plt.figure(5)
-plt.magnitude_spectrum(Sensor2y_g, Fs= Fs, label = "Handlebar Sensor", color ='r')
-plt.magnitude_spectrum(Sensor1y_g, Fs = Fs, label = 'Axle Sensor')
+plt.magnitude_spectrum(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
+plt.magnitude_spectrum(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
 plt.xlim([0, 400])
 plt.title('Magnitude Spectrum')
 plt.legend()
