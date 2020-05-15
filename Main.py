@@ -190,14 +190,17 @@ Zpd = np.mean(Zdiff/Sensor2z_g)*100
 #print('Avg %\ diff. of Z Axis =', '%.5f'% Zpd,'G')
 
 #Additonal statistics
-S1yMedian = np.median(Sensor1y_g)
-S2yMedian = np.median(Sensor2y_g)
+#S1yMedian = np.median(Sensor1y_g)
+#S2yMedian = np.median(Sensor2y_g)
 #print('Sensor 1 Y Axis Median =', '%.5f'%  S1yMedian, 'G')
 #print('Sensor 2 Y Axis Median =', '%.5f'%  S2yMedian, 'G')
 S1yP2P = S1yMAX - S1yMIN
 S2yP2P = S2yMAX - S1yMIN
 print('Sensor 1 Y Total Range =', '%.5f'%  S1yP2P, 'G')
 print('Sensor 2 Y Total Range =', '%.5f'%  S2yP2P, 'G')
+S1vs2P2P = ((S2yP2P-S1yP2P)/S2yP2P)*100
+print('%.3f'% S1vs2P2P,'% Reduction P2P')
+#RMS 
 S1yRMS = math.sqrt(np.sum(Sensor1y_g**2)/len(time))
 S2yRMS = math.sqrt(np.sum(Sensor2y_g**2)/len(time))
 print('Sensor 1 RMS =', '%.5f'%  S1yRMS, 'G')
@@ -205,10 +208,31 @@ print('Sensor 2 RMS =', '%.5f'%  S2yRMS, 'G')
 S1vs2RMS = ((S2yRMS-S1yRMS)/S2yRMS)*100
 print('%.3f'% S1vs2RMS,'% Reduction RMS')
 
+#Integration of Data
+
+
+#Create a Nice Table to see Scalar Values
+plt.figure(1)
+columns = ('Average(G)', 'MAX(G)', 'MIN(G)', 'Peak to Peak (G)', 'RMS')
+rows = ('Sensor 1 X(Upper)', 'Sensor 2 X(Lower)', 'Sensor 1 Y(Upper)', 'Sensor 2 Y(Lower)', 'Sensor 1 Z(Upper)', 'Sensor 2 Z(Lower)')
+data = [[S1xmean, S1xMAX, S1xMIN, 'S1xP2P', 'S1xRMS'],
+        [S2xmean, S2xMAX, S2xMIN, 'S2xP2P', 'S2xRMS'],
+        [S1ymean, S1yMAX, S1yMIN, S1yP2P, S1yRMS],
+        [S2ymean, S2yMAX, S2yMIN, S2yP2P, S1yRMS],
+        [S1zmean, S1zMAX, S1zMIN, 'S1zP2P', 'S1zRMS'],
+        [S2zmean, S2zMAX, S2zMIN, 'S2zP2P', 'S2zRMS'],]
+the_table = plt.table(cellText=data, loc='center', rowLabels=rows, rowLoc='center', colLabels=columns, colLoc='center') 
+the_table.set_fontsize(14)
+the_table.scale(1,4)
+#the_table.axis(off)
+
+data.to_csv()
+
+
 
 #make some plots========================================================================================
 #Acceleration plots vs. time
-fig, (x1, y1, z1) = plt.subplots(3,1)  #Create one Figure with 3 plots
+fig, (x1, y1, z1) = plt.subplots(3,2)  #Create one Figure with 3 plots
 fig.subplots_adjust(hspace=0.5) # extra space between plots
 fig.suptitle("Acceleration over Time {}".format(FN))  # Give the figure a title
 x1 = plt.subplot(311)
@@ -242,7 +266,7 @@ z1.legend()
 z1.grid()
 
 #FFT========================================================================================
-plt.figure(2)
+plt.figure(3)
 # Set size of array for FFT (time and data arrays must equal)
 X = 1
 N = 0
@@ -286,7 +310,7 @@ plt.grid()
 #plt.legend()
 #plt.grid()
 
-plt.figure(3)
+plt.figure(4)
 plt.hist(Sensor2y_g, bins='auto', label = "Axle Sensor", color = 'r')
 plt.hist(Sensor1y_g, bins='auto', label = 'Handlebar Sensor')
 plt.title('Histogram - Y Axis of {}'.format(FN))
@@ -296,7 +320,7 @@ plt.xlim([-3,3])
 plt.legend()
 plt.grid()
 
-plt.figure(4)
+plt.figure(5)
 plt.psd(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
 plt.psd(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
 #plt.xlim([0, 400])
@@ -309,7 +333,7 @@ plt.title('Power Spectral Density - Y Axis of {}'.format(FN))
 plt.legend()
 plt.grid()
 
-plt.figure(5)
+plt.figure(6)
 plt.magnitude_spectrum(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
 plt.magnitude_spectrum(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
 plt.xlim([0, 400])
