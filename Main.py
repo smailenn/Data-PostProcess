@@ -6,20 +6,28 @@ import math
 from numpy import savetxt
 from scipy import stats
 from scipy import signal
+from scipy import integrate
+from scipy.stats import gaussian_kde
+import seaborn as sns
 import os
 
-# what file do you want?
-File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING01.txt'
+
+# what file do you want to analyze?
+#File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING02.txt'  #Waxwing Data
+File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt'  #Warbird Data
+#File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\CUTTHROAT01.csv'  #  Cutthroat Data
 
 #DTS or Arduino Data (Using LIS3dh)
 Arduino = 'Arduino'
 DTS = 'DTS'
 No = None
 Yes = None
-Sensor_select = 'Arduino'
-Trim_data = 'Yes'
+Sensor_select = 'Arduino'  #DTS or Arduino
+Trim_data = 'Yes'  #Yes or No
+Magnitude_chart = 'No'
+Histogram_chart = Yes
 
-#Note this is typical layout!!!!!
+#Note this is typical layout, but you may have to adjust
 #Sensor 1 - upper sensor, at Handlebar
 #Sensor 2 - lower sensor, at Axle
 
@@ -89,23 +97,24 @@ if Sensor_select == Arduino:
     Sensor2x_offset = 12.6
     Sensor2y_offset = -769
     Sensor2z_offset = 98
-    Calibrate_direction = -1 #multiply raw data by this to change trajectory to normal of drivetrain
+    Cd = -1 #multiply raw data by this to change trajectory to match bicycle Orientation
     print('data calibrated')
     #Orientate sensors, calibrate, and convert to G's
-    Sensor1x_g = ((Sensor1xRaw + Sensor1x_offset)*(accel_range/accel_raw_scale_pos))*Calibrate_direction
-    Sensor1y_g = ((Sensor1yRaw + Sensor1y_offset)*(accel_range/accel_raw_scale_pos))+1
-    Sensor1z_g = (Sensor1zRaw + Sensor1z_offset)*(accel_range/accel_raw_scale_pos)
-    Sensor2x_g = (Sensor2xRaw + Sensor2x_offset)*(accel_range/accel_raw_scale_pos)
-    Sensor2y_g = ((Sensor2yRaw + Sensor2y_offset)*(accel_range/accel_raw_scale_pos))+1
-    Sensor2z_g = ((Sensor2zRaw + Sensor2z_offset)*(accel_range/accel_raw_scale_pos))*Calibrate_direction
+    Sensor1x_g = ((Sensor1xRaw + Sensor1x_offset)*(accel_range/accel_raw_scale_pos))
+    Sensor1y_g = (((Sensor1yRaw + Sensor1y_offset)*(accel_range/accel_raw_scale_pos))+1)*Cd
+    Sensor1z_g = ((Sensor1zRaw + Sensor1z_offset)*(accel_range/accel_raw_scale_pos))*Cd
+    Sensor2x_g = ((Sensor2xRaw + Sensor2x_offset)*(accel_range/accel_raw_scale_pos))
+    Sensor2y_g = (((Sensor2yRaw + Sensor2y_offset)*(accel_range/accel_raw_scale_pos))+1)*Cd
+    Sensor2z_g = ((Sensor2zRaw + Sensor2z_offset)*(accel_range/accel_raw_scale_pos))*Cd
     print('data orientated + converted')
 
 #If needed trim the arrays for bad/false/faulty data
 #Trimming is based on # of samples, not in time array
 if Trim_data == 'Yes': 
     trim_beg = 0 #trim beginning of array
-    trim_end = 300000  #trim end of array
+    trim_end = 250000  #trim end of array
     time = time[trim_beg:trim_end]
+    print( time[::-1])
     Sensor1x_g = Sensor1x_g[trim_beg:trim_end]
     Sensor1y_g = Sensor1y_g[trim_beg:trim_end]
     Sensor1z_g = Sensor1z_g[trim_beg:trim_end]
@@ -198,47 +207,117 @@ S1yP2P = S1yMAX - S1yMIN
 S2yP2P = S2yMAX - S1yMIN
 print('Sensor 1 Y Total Range =', '%.5f'%  S1yP2P, 'G')
 print('Sensor 2 Y Total Range =', '%.5f'%  S2yP2P, 'G')
-S1vs2P2P = ((S2yP2P-S1yP2P)/S2yP2P)*100
-print('%.3f'% S1vs2P2P,'% Reduction P2P')
+S1vs2P2PY = ((S2yP2P-S1yP2P)/S2yP2P)*100
+print('%.3f'% S1vs2P2PY,'% Reduction Y Axis P2P')
+S1xP2P = S1xMAX - S1xMIN
+S2xP2P = S2xMAX - S1xMIN
+print('Sensor 1 X Total Range =', '%.5f'%  S1xP2P, 'G')
+print('Sensor 2 X Total Range =', '%.5f'%  S2xP2P, 'G')
+S1vs2P2PX = ((S2xP2P-S1xP2P)/S2xP2P)*100
+print('%.3f'% S1vs2P2PX,'% Reduction X Axis P2P')
+S1zP2P = S1zMAX - S1zMIN
+S2zP2P = S2zMAX - S1zMIN
+print('Sensor 1 Z Total Range =', '%.5f'%  S1zP2P, 'G')
+print('Sensor 2 Z Total Range =', '%.5f'%  S2zP2P, 'G')
+S1vs2P2PZ = ((S2zP2P-S1zP2P)/S2zP2P)*100
+print('%.3f'% S1vs2P2PZ,'% Reduction Z Axis P2P')
+
 #RMS 
+S1xRMS = math.sqrt(np.sum(Sensor1x_g**2)/len(time))
+S2xRMS = math.sqrt(np.sum(Sensor2x_g**2)/len(time))
+print('Sensor 1 X Axis RMS =', '%.5f'%  S1xRMS, 'G')
+print('Sensor 2 X Axis RMS =', '%.5f'%  S2xRMS, 'G')
+S1vs2RMSX = ((S2xRMS-S1xRMS)/S2xRMS)*100
+print('%.3f'% S1vs2RMSX,'% Reduction RMS X Axis')
 S1yRMS = math.sqrt(np.sum(Sensor1y_g**2)/len(time))
 S2yRMS = math.sqrt(np.sum(Sensor2y_g**2)/len(time))
-print('Sensor 1 RMS =', '%.5f'%  S1yRMS, 'G')
-print('Sensor 2 RMS =', '%.5f'%  S2yRMS, 'G')
-S1vs2RMS = ((S2yRMS-S1yRMS)/S2yRMS)*100
-print('%.3f'% S1vs2RMS,'% Reduction RMS')
+print('Sensor 1 Y Axis RMS =', '%.5f'%  S1yRMS, 'G')
+print('Sensor 2 Y Axis RMS =', '%.5f'%  S2yRMS, 'G')
+S1vs2RMSY = ((S2yRMS-S1yRMS)/S2yRMS)*100
+print('%.3f'% S1vs2RMSY,'% Reduction RMS Y Axis')
+S1zRMS = math.sqrt(np.sum(Sensor1z_g**2)/len(time))
+S2zRMS = math.sqrt(np.sum(Sensor2z_g**2)/len(time))
+print('Sensor 1 Z Axis RMS =', '%.5f'%  S1zRMS, 'G')
+print('Sensor 2 Z Axis RMS =', '%.5f'%  S2zRMS, 'G')
+S1vs2RMSZ = ((S2zRMS-S1zRMS)/S2zRMS)*100
+print('%.3f'% S1vs2RMSZ,'% Reduction RMS Z Axis')
 
-#Integration of Data
+# Absolute Values of Axis Data
+Sensor1x_abs = np.absolute(Sensor1x_g)
+Sensor1y_abs = np.absolute(Sensor1y_g)
+Sensor1z_abs = np.absolute(Sensor1z_g)
+Sensor2x_abs = np.absolute(Sensor2x_g)
+Sensor2y_abs = np.absolute(Sensor2y_g)
+Sensor2z_abs = np.absolute(Sensor2z_g)
 
+#Integration of Data using abs values
+# Single integration, to velocity
+Sensor1x_int1 = integrate.simps(Sensor1x_abs, time)
+print('Sensor 1 X Axis Accel. Integral','%.5f'% Sensor1x_int1)
+Sensor2x_int1 = np.sum(integrate.trapz(Sensor2x_abs, time))
+print('Sensor 2 X Axis Accel. Integral','%.5f'% Sensor2x_int1)
+S1vs2INTX = ((Sensor2x_int1-Sensor1x_int1)/Sensor2x_int1)*100 
+print('%.5f'% S1vs2INTX,'% Reduction Integral X Axis')
+Sensor1y_int1 = integrate.simps(Sensor1y_abs, time)
+print('Sensor 1 Y Axis Accel. Integral','%.5f'% Sensor1y_int1)
+Sensor2y_int1 = integrate.simps(Sensor2y_abs, time)
+print('Sensor 2 Y Axis Accel. Integral','%.5f'% Sensor2y_int1)
+S1vs2INTY = ((Sensor2y_int1-Sensor1y_int1)/Sensor2y_int1)*100 
+print('%.5f'% S1vs2INTY,'% Reduction Integral Y Axis')
+Sensor1z_int1 = integrate.simps(Sensor1z_abs, time)
+print('Sensor 1 Z Axis Accel. Integral','%.5f'% Sensor1z_int1)
+Sensor2z_int1 = integrate.simps(Sensor2z_abs, time)
+print('Sensor 2 Z Axis Accel. Integral','%.5f'% Sensor2z_int1)
+S1vs2INTZ = ((Sensor2z_int1-Sensor1z_int1)/Sensor2z_int1)*100 
+print('%.5f'% S1vs2INTZ,'% Reduction Integral Z Axis')
 
-#Create a Nice Table to see Scalar Values
-plt.figure(1)
-columns = ('Average(G)', 'MAX(G)', 'MIN(G)', 'Peak to Peak (G)', 'RMS')
-rows = ('Sensor 1 X(Upper)', 'Sensor 2 X(Lower)', 'Sensor 1 Y(Upper)', 'Sensor 2 Y(Lower)', 'Sensor 1 Z(Upper)', 'Sensor 2 Z(Lower)')
-data = [[S1xmean, S1xMAX, S1xMIN, 'S1xP2P', 'S1xRMS'],
-        [S2xmean, S2xMAX, S2xMIN, 'S2xP2P', 'S2xRMS'],
-        [S1ymean, S1yMAX, S1yMIN, S1yP2P, S1yRMS],
-        [S2ymean, S2yMAX, S2yMIN, S2yP2P, S1yRMS],
-        [S1zmean, S1zMAX, S1zMIN, 'S1zP2P', 'S1zRMS'],
-        [S2zmean, S2zMAX, S2zMIN, 'S2zP2P', 'S2zRMS'],]
-the_table = plt.table(cellText=data, loc='center', rowLabels=rows, rowLoc='center', colLabels=columns, colLoc='center') 
-the_table.set_fontsize(14)
-the_table.scale(1,4)
-#the_table.axis(off)
+#Acceleration values in m/s^2
+Gravity = 9.80665 
+Sensor1x_Grav = Sensor1x_g*Gravity
+Sensor1y_Grav = Sensor1y_g*Gravity
+Sensor1z_Grav = Sensor1z_g*Gravity
+Sensor2x_Grav = Sensor2x_g*Gravity
+Sensor2y_Grav = Sensor2y_g*Gravity
+Sensor2z_Grav = Sensor2z_g*Gravity
 
-data.to_csv()
+# Array of ISO 2631-1 Discomfort Scale
+Discomfort = ['Not Uncomfortable', 'A little Uncomfortable', 'Fairly Uncomfortable', 'Uncomfortable', 'Very Uncomfortable', 'Extremely Uncomfortable']
+Discomfort_Vals = [-10, 0.315, 0.5, 0.8, 1.0, 1.6, 2.5, 5, 20]
 
-
+S1y_G_Hist = np.histogram(Sensor1y_Grav, bins = Discomfort_Vals)
 
 #make some plots========================================================================================
-#Acceleration plots vs. time
+#===========================================================================================================
+#Create a Nice Table to see scalar values
+columns = ('Average(G)', 'MAX(G)', 'MIN(G)', 'Peak to Peak (G)', 'RMS', 'Integral')
+rows = ('Sensor 1 X(Upper)', 'Sensor 2 X(Lower)', 'Sensor 1 Y(Upper)', 'Sensor 2 Y(Lower)', 'Sensor 1 Z(Upper)', 'Sensor 2 Z(Lower)')
+results = np.array([['%.5f'% S1xmean,'%.5f'%  S1xMAX,'%.5f'%  S1xMIN,'%.5f'% S1xP2P,'%.5f'% S1xRMS,'%.5f'% Sensor1x_int1], 
+        ['%.5f'% S2xmean,'%.5f'%  S2xMAX,'%.5f'%  S2xMIN,'%.5f'% S2xP2P,'%.5f'% S2xRMS, '%.5f'% Sensor2x_int1 ],
+        ['%.5f'% S1ymean,'%.5f'%  S1yMAX,'%.5f'%  S1yMIN,'%.5f'% S1yP2P,'%.5f'% S1yRMS, '%.5f'% Sensor1y_int1],
+        ['%.5f'% S2ymean,'%.5f'%  S2yMAX,'%.5f'%  S2yMIN,'%.5f'% S2yP2P,'%.5f'% S2yRMS, '%.5f'% Sensor2y_int1],
+        ['%.5f'% S1zmean,'%.5f'%  S1zMAX,'%.5f'%  S1zMIN,'%.5f'% S1zP2P,'%.5f'% S1zRMS, '%.5f'% Sensor1z_int1],
+        ['%.5f'% S2zmean,'%.5f'%  S2zMAX,'%.5f'%  S2zMIN,'%.5f'% S2zP2P,'%.5f'% S2zRMS, '%.5f'% Sensor2z_int1]])
+df = pd.DataFrame(results, columns = columns, index = rows)
+df.to_csv(FN, sep='\t')
+fig, tx = plt.subplots()
+fig.patch.set_visible(False)
+tx.set_title(FN)
+tx.axis('off')
+tx.axis('tight')
+tx.table(cellText=df.values, colLabels=df.columns, rowLabels=rows, loc='center')
+fig.tight_layout()
+
+
+#Acceleration plots vs. time======================================================
 fig, (x1, y1, z1) = plt.subplots(3,2)  #Create one Figure with 3 plots
 fig.subplots_adjust(hspace=0.5) # extra space between plots
 fig.suptitle("Acceleration over Time {}".format(FN))  # Give the figure a title
 x1 = plt.subplot(311)
 x1.plot(time, Sensor2x_g, label = 'Axle Sensor - X', color='r')
-x1.plot(time, Sensor1x_g, label = 'Handlebar Sensor - X')
-x1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+x1.plot(time, Sensor1x_g, label = 'Handlebar or Seatpost Sensor - X')
+x1.set_ylim(-10,10)
+#x1.set_xlim(0,)
+#x1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
 x1.set_title('Acceleration (X Axis)')
 x1.set_xlabel('Time(Sec)')
 x1.set_ylabel('G')
@@ -247,8 +326,9 @@ x1.grid()
 
 y1 = plt.subplot(312)
 y1.plot(time, Sensor2y_g, label = 'Axle Sensor - Y', color='r')
-y1.plot(time, Sensor1y_g, label = 'Handlebar Sensor - Y')
-y1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+y1.plot(time, Sensor1y_g, label = 'Handlebar or Seatpost Sensor - Y')
+y1.set_ylim(-10,10)
+#y1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
 y1.set_title('Acceleration (Y Axis)')
 y1.set_xlabel('Time(Sec)')
 y1.set_ylabel('G')
@@ -257,15 +337,16 @@ y1.grid()
 
 z1 = plt.subplot(313)
 z1.plot(time, Sensor2z_g, label = 'Axle Sensor - Z', color='r')
-z1.plot(time, Sensor1z_g, label = 'Handlebar Sensor - Z')
-z1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
+z1.plot(time, Sensor1z_g, label = 'Handlebar or Seatpost Sensor - Z')
+z1.set_ylim(-10,10)
+#z1.axis([0, 230, -10, 10])  #Trim X Axis to show only good ride data
 z1.set_title('Acceleration (Z Axis)')
 z1.set_xlabel('Time(Sec)')
 z1.set_ylabel('G')
 z1.legend()
 z1.grid()
 
-#FFT========================================================================================
+#FFT=====================================================================
 plt.figure(3)
 # Set size of array for FFT (time and data arrays must equal)
 X = 1
@@ -282,18 +363,18 @@ Fs = int(1/time_int_avg)
 print(Fs, 'Hz Sample Rate for FFT')
 print('N/2 =', int(N/2))
 frequency = np.linspace(0.0, int(Fs/2), int(N/2))  #X Axis Frequency range
-freq_data_1 = np.fft.fft(Sensor1y_g[0:N])  #FFT of Sensor[x]
-freq_data_2 = np.fft.fft(Sensor2y_g[0:N])  #FFT of Sensor[y]
+freq_data_1 = np.fft.fft(Sensor1y_Grav[0:N])  #FFT of Sensor[x]
+freq_data_2 = np.fft.fft(Sensor2y_Grav[0:N])  #FFT of Sensor[y]
 fft_1 = 2/N*np.abs(freq_data_1[0:int(N/2)]) # Take abs value of Sensor[x] 
 fft_2 = 2/N*np.abs(freq_data_2[0:int(N/2)]) # Take abs value of Sensor[y] 
 
 # plot results on an x-y scatter plot
 plt.plot(frequency, fft_2, label = 'Axle Sensor(Y) ', color='r')
-plt.plot(frequency, fft_1, label = 'Handlebar Sensor(Y)')
+plt.plot(frequency, fft_1, label = 'Handlebar or Seatpost Sensor(Y)')
 plt.title('FFT - Y Axis of {}'.format(FN))
 plt.xlabel('Frequency (Hz)')
 plt.ylabel('Amplitude(G)')
-plt.xlim([0, 400])
+plt.xlim([0, 100])
 #plt.ylim([0, 300])
 plt.legend()
 plt.grid()
@@ -301,7 +382,7 @@ plt.grid()
 #Data in frequency range Acceleration-> Displacement
 #Displacement_1Y = (freq_data_1 * 9810)/(2*pi()*)
 #plt.plot(frequency, fft_2, label = 'Axle Sensor', color='r')
-#plt.plot(frequency, fft_1, label = 'Handlebar Sensor')
+#plt.plot(frequency, fft_1, label = 'Handlebar or Seatpost Sensor')
 #plt.title('FFT')
 #plt.xlabel('Frequency (Hz)')
 #plt.ylabel('Amplitude')
@@ -310,36 +391,116 @@ plt.grid()
 #plt.legend()
 #plt.grid()
 
-plt.figure(4)
-plt.hist(Sensor2y_g, bins='auto', label = "Axle Sensor", color = 'r')
-plt.hist(Sensor1y_g, bins='auto', label = 'Handlebar Sensor')
-plt.title('Histogram - Y Axis of {}'.format(FN))
-plt.xlabel('Acceleration (G)')
-plt.ylabel('Quantity')
-plt.xlim([-3,3])
-plt.legend()
-plt.grid()
-
+# Histogram =============================================================================
+if Histogram_chart == Yes:
+    plt.figure(4)
+    #sns.set_style('whitegrid')
+    #sns.kdeplot(Sensor1y_Grav, bw=0.1)
+    #sns.kdeplot(Sensor2y_Grav, bw=0.1)
+    
+    #plt.plot(xs,Sensor1y_density(xs))
+    
+    #plt.hist(Sensor1y_Grav, bins= Discomfort_Vals, histtype='step', label = 'Handlebar or Seatpost Sensor')
+    #plt.hist(Sensor2y_Grav, bins= Discomfort_Vals, histtype='step', label = "Axle Sensor", color = 'r')
+    plt.hist(Sensor1y_Grav, histtype='step', label = 'Handlebar or Seatpost Sensor')
+    plt.hist(Sensor2y_Grav, histtype='step', label = "Axle Sensor", color = 'r')
+    plt.title('Histogram - Y Axis of {}'.format(FN))
+    plt.xlabel('Acceleration (G)')
+    plt.ylabel('Quantity')
+    #plt.barh(6, performance, xerr=error, align='center')
+    #plt.set_xticks(6)
+    #plt.set_xticklabels(Discomfort)
+    #plt.xticks(Discomfort_Vals, labels=Discomfort, rotation='vertical', text='wrap')
+    plt.xticks(Discomfort_Vals)
+    plt.xlim([0,20])
+    #plt.ylim([0,10])
+    plt.legend()
+    plt.grid()
+else: 
+    print('No Histogram')
+# PSD =============================================================================
 plt.figure(5)
+#plt.psd(Sensor2y_abs, Fs= Fs, label = "Axle Sensor", color ='r')
+#plt.psd(Sensor1y_abs, Fs = Fs, label = 'Handlebar Sensor')
 plt.psd(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
-plt.psd(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
+plt.psd(Sensor1y_g, Fs = Fs, label = 'Handlebar or Seatpost Sensor')
 #plt.xlim([0, 400])
 plt.title('Power Spectral Density - Y Axis of {}'.format(FN))
 #f, Pxx_den = signal.welch(Sensor1y_g, Fs)
 #plt.semilogy(f, Pxx_den)
 #plt.ylim([0.5e-3, 1])
-#plt.xlabel('frequency [Hz]')
-#plt.ylabel('PSD [V**2/Hz]')
+plt.xlabel('frequency [Hz]')
+plt.ylabel('PSD [G**2/Hz]')
 plt.legend()
 plt.grid()
 
-plt.figure(6)
-plt.magnitude_spectrum(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
-plt.magnitude_spectrum(Sensor1y_g, Fs = Fs, label = 'Handlebar Sensor')
-plt.xlim([0, 400])
-plt.title('Magnitude Spectrum - Y Axis of {}'.format(FN))
+# Absolute values over time =============================================================================
+#splt.figure(6)
+#plt.plot(time, Sensor2y_abs, label = "Axle Sensor", color ='r')
+#plt.plot(time, Sensor1y_abs, label = "Handlebar or Seatpost Sensor")
+#plt.xlim([0, 400])
+#plt.title('Absolute Values - Y Axis of {}'.format(FN))
+#plt.legend()
+#plt.grid()
+
+# Magnitude Spectrum Density =============================================================================
+if Magnitude_chart == Yes:
+    plt.figure(7)
+    plt.magnitude_spectrum(Sensor2y_g, Fs= Fs, label = "Axle Sensor", color ='r')
+    plt.magnitude_spectrum(Sensor1y_g, Fs = Fs, label = 'Handlebar or Seatpost Sensor')
+    plt.xlim([0, 400])
+    plt.title('Magnitude Spectrum - Y Axis of {}'.format(FN))
+    plt.legend()
+    plt.grid()
+    plt.show()
+else: 
+    print('No MSD')    
+
+#Second Integration of Data, Displacement =============================================================================
+plt.figure(8)
+Sensor1x_int1c = integrate.cumtrapz(Sensor1x_abs, time)
+Sensor2x_int1c = integrate.cumtrapz(Sensor2x_abs, time)
+Sensor1y_int1c = integrate.cumtrapz(Sensor1y_abs, time)
+Sensor2y_int1c = integrate.cumtrapz(Sensor2y_abs, time)
+Sensor1z_int1c = integrate.cumtrapz(Sensor1z_abs, time)
+Sensor2z_int1c = integrate.cumtrapz(Sensor2z_abs, time)
+Sensor1x_int2 = integrate.cumtrapz(Sensor1x_int1c, time[:-1])
+Sensor2x_int2 = integrate.cumtrapz(Sensor2x_int1c, time[:-1])
+Sensor1y_int2 = integrate.cumtrapz(Sensor1y_int1c, time[:-1])
+Sensor2y_int2 = integrate.cumtrapz(Sensor2y_int1c, time[:-1])
+Sensor1z_int2 = integrate.cumtrapz(Sensor1z_int1c, time[:-1])
+Sensor2z_int2 = integrate.cumtrapz(Sensor2z_int1c, time[:-1])
+
+Sensor1x_abs.to_csv("Sensor1abs.csv")
+
+Sensor1x_abs = Sensor1x_abs*32.2
+
+B = 1
+Sensor1x_int1cc = np.empty(len(time))
+while B <= (len(time)-1):
+    Sensor1x_int1cc[B] = time_int_avg*((Sensor1x_abs[B-1] + Sensor1x_abs[B])/2)
+    B = B+1
+
+Sensor1x_int1cc = Sensor1x_int1cc*3600/5280
+#print(np.mean(Sensor1x_int1cc))
+
+plt.plot(time, Sensor1x_int1cc, label = 'Axle Sensor(X)', color='r')
+#plt.plot(time[:-2], Sensor1y_int2, label = "Handlebar or Seatpost Sensor(X)")
+plt.title('Velocity - X Axis of {}'.format(FN))
+plt.xlabel('Time (usec)')
+plt.ylabel('Velocity (mph)')
+#plt.xlim([0, 400])
+#plt.ylim([0, 300])
 plt.legend()
 plt.grid()
 
+
+SXAV1 = Sensor1x_int1*32.2*time[-1:]/5280*3600
+print('SXAV', SXAV1)
+SXAV2 = Sensor2x_int1*32.2*time_int_avg*time[-1:]*(1/5280)*60*60
+print('SXAV', SXAV2)
+
+
+#Show all plots now  
 plt.show()
 
