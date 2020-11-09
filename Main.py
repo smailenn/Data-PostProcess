@@ -14,26 +14,29 @@ import os
 
 # what file do you want to analyze?
 #File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Waxwing test\\WAXWING02.txt'  #Waxwing Data
-File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt'  #Warbird Data
-#File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\CUTTHROAT01.csv'  #  Cutthroat Data
+#File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Warbird V3\\WARBIRD02.txt'  #Warbird Data
+#File_path = 'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\\Vibration Analysis\\Cutthroat V2\\Data\\CUTTHROAT01.csv'  #  Cutthroat Data
+File_path = 'D:\\DATA01.txt'  #  Cutthroat Data
 
 #DTS or Arduino Data (Using LIS3dh)
 Arduino = 'Arduino'
 DTS = 'DTS'
 No = None
 Yes = None
+###############################################
 Sensor_select = 'Arduino'  #DTS or Arduino
-Trim_data = 'Yes'  #Yes or No
+Trim_data = 'No'  #Yes or No
 Magnitude_chart = 'No'
 Histogram_chart = Yes
+################################################
 
 #Note this is typical layout, but you may have to adjust
-#Sensor 1 - upper sensor, at Handlebar
-#Sensor 2 - lower sensor, at Axle
+#Sensor 1 - upper sensor, at Handlebar/Seatpost/etc.
+#Sensor 2 - lower sensor, at Axle/s
 
 #read the data into an array from text file
 if Sensor_select == Arduino:
-    dataframe = pd.read_csv(File_path, sep='\t')
+    dataframe = pd.read_csv(File_path, sep=',')    # TAB=\t
     print('Arduino data selected')
     filename = os.path.basename(File_path)
     FN = os.path.splitext(filename)[0]
@@ -81,7 +84,7 @@ if Sensor_select == Arduino:
 
 time_int = np.ediff1d(time)  # Find time intervals - this is array (time between measurements)
 time_int_avg = stats.trim_mean(time_int,0.1) # Trim time intervals of SD lag points, large time intervals during a SD write, this is scalar
-print('Time Interval Average =', "%.8f"% time_int_avg,'S')
+#print('Time Interval Average =', "%.8f"% time_int_avg,'S')
 time_Hz = 1/time_int_avg
 print('Sample Rate =', '%.2f'% time_Hz, 'Hz')
 #savetxt('time_int.csv', time_int, delimiter=',')  # save Time Interval Array as CSV for review if needed
@@ -90,7 +93,7 @@ print('Sample Rate =', '%.2f'% time_Hz, 'Hz')
 #Calibrate, orientate, and Normalize readings to G's
 #Calculate offset values from calibration test at beginning of test runs, ideally done at same time as testing
 if Sensor_select == Arduino: 
-    accel_g_unit = (accel_raw_scale_pos - accel_raw_scale_neg)/accel_range
+    #accel_g_unit = (accel_raw_scale_pos - accel_raw_scale_neg)/accel_range
     Sensor1x_offset = 63.5 
     Sensor1y_offset = -692 
     Sensor1z_offset = -22.6
@@ -100,12 +103,19 @@ if Sensor_select == Arduino:
     Cd = -1 #multiply raw data by this to change trajectory to match bicycle Orientation
     print('data calibrated')
     #Orientate sensors, calibrate, and convert to G's
-    Sensor1x_g = ((Sensor1xRaw + Sensor1x_offset)*(accel_range/accel_raw_scale_pos))
-    Sensor1y_g = (((Sensor1yRaw + Sensor1y_offset)*(accel_range/accel_raw_scale_pos))+1)*Cd
-    Sensor1z_g = ((Sensor1zRaw + Sensor1z_offset)*(accel_range/accel_raw_scale_pos))*Cd
-    Sensor2x_g = ((Sensor2xRaw + Sensor2x_offset)*(accel_range/accel_raw_scale_pos))
-    Sensor2y_g = (((Sensor2yRaw + Sensor2y_offset)*(accel_range/accel_raw_scale_pos))+1)*Cd
-    Sensor2z_g = ((Sensor2zRaw + Sensor2z_offset)*(accel_range/accel_raw_scale_pos))*Cd
+    #Sensor1x_g = ((Sensor1xRaw + Sensor1x_offset)*(accel_range/accel_raw_scale_pos))
+    #Sensor1y_g = (((Sensor1yRaw + Sensor1y_offset)*(accel_range/accel_raw_scale_pos))+1)*Cd
+    #Sensor1z_g = ((Sensor1zRaw + Sensor1z_offset)*(accel_range/accel_raw_scale_pos))*Cd
+    #Sensor2x_g = ((Sensor2xRaw + Sensor2x_offset)*(accel_range/accel_raw_scale_pos))
+    #Sensor2y_g = (((Sensor2yRaw + Sensor2y_offset)*(accel_range/accel_raw_scale_pos))+1)*Cd
+    #Sensor2z_g = ((Sensor2zRaw + Sensor2z_offset)*(accel_range/accel_raw_scale_pos))*Cd
+    Sensor1x_g = Sensor1xRaw
+    Sensor1y_g = Sensor1yRaw
+    Sensor1z_g = Sensor1zRaw
+    Sensor2x_g = Sensor2xRaw
+    Sensor2y_g = Sensor2yRaw
+    Sensor2z_g = Sensor2zRaw
+
     print('data orientated + converted')
 
 #If needed trim the arrays for bad/false/faulty data
@@ -125,7 +135,7 @@ if Trim_data == 'Yes':
     print('Size of array after trim =', trim_size,'samples')
 else:
     print('Data not trimmed')
-    print('Size of Array =',len(time))
+    print('Size of Data Array/s =',len(time))
 
 
 #Analyze the Arrays ============================================================================================================
@@ -134,115 +144,96 @@ S1ymean = np.mean(Sensor1y_g)
 S2ymean = np.mean(Sensor2y_g)    
 S1xmean = np.mean(Sensor1x_g)
 S2xmean = np.mean(Sensor2x_g)    
-S1zmean = np.mean(Sensor1z_g)
-S2zmean = np.mean(Sensor2z_g)  
+#S1zmean = np.mean(Sensor1z_g)
+#S2zmean = np.mean(Sensor2z_g)  
 print('Sensor 1 Y Axis Average = ', '%.5f'% S1ymean, 'G')
 print('Sensor 2 Y Axis Average = ', '%.5f'% S2ymean, 'G')
 print('Sensor 1 X Axis Average = ', '%.5f'% S1xmean, 'G')
 print('Sensor 2 X Axis Average = ', '%.5f'% S2xmean, 'G')
-print('Sensor 1 Z Axis Average = ', '%.5f'% S1zmean, 'G')
-print('Sensor 2 Z Axis Average = ', '%.5f'% S2zmean, 'G')
+#print('Sensor 1 Z Axis Average = ', '%.5f'% S1zmean, 'G')
+#print('Sensor 2 Z Axis Average = ', '%.5f'% S2zmean, 'G')
 
 # Find MAX of sensor data
 S1yMAX = np.amax(Sensor1y_g)
 S2yMAX = np.amax(Sensor2y_g)    
 S1xMAX = np.amax(Sensor1x_g)
 S2xMAX = np.amax(Sensor2x_g)    
-S1zMAX = np.amax(Sensor1z_g)
-S2zMAX = np.amax(Sensor2z_g)    
+#S1zMAX = np.amax(Sensor1z_g)
+#S2zMAX = np.amax(Sensor2z_g)    
 print('Sensor 1 Y Axis MAX = ', '%.5f'% S1yMAX, 'G')
 print('Sensor 2 Y Axis MAX = ', '%.5f'% S2yMAX, 'G')
 print('Sensor 1 X Axis MAX = ', '%.5f'% S1xMAX, 'G')
 print('Sensor 2 X Axis MAX = ', '%.5f'% S2xMAX, 'G')
-print('Sensor 1 Z Axis MAX = ', '%.5f'% S1zMAX, 'G')
-print('Sensor 2 Z Axis MAX = ', '%.5f'% S2zMAX, 'G')
+#print('Sensor 1 Z Axis MAX = ', '%.5f'% S1zMAX, 'G')
+#print('Sensor 2 Z Axis MAX = ', '%.5f'% S2zMAX, 'G')
 
 # Find MIN of sensor data
 S1yMIN = np.amin(Sensor1y_g)
 S2yMIN = np.amin(Sensor2y_g)    
 S1xMIN = np.amin(Sensor1x_g)
 S2xMIN = np.amin(Sensor2x_g)    
-S1zMIN = np.amin(Sensor1z_g)
-S2zMIN = np.amin(Sensor2z_g)    
+#S1zMIN = np.amin(Sensor1z_g)
+#S2zMIN = np.amin(Sensor2z_g)    
 print('Sensor 1 Y Axis MIN = ', '%.5f'% S1yMIN, 'G')
 print('Sensor 2 Y Axis MIN = ', '%.5f'% S2yMIN, 'G')
 print('Sensor 1 X Axis MIN = ', '%.5f'% S1xMIN, 'G')
 print('Sensor 2 X Axis MIN = ', '%.5f'% S2xMIN, 'G')
-print('Sensor 1 Z Axis MIN = ', '%.5f'% S1zMIN, 'G')
-print('Sensor 2 Z Axis MIN = ', '%.5f'% S2zMIN, 'G')
+#print('Sensor 1 Z Axis MIN = ', '%.5f'% S1zMIN, 'G')
+#print('Sensor 2 Z Axis MIN = ', '%.5f'% S2zMIN, 'G')
 
 # Transmissibility and Isolation %
-Trans_x = (S1xmean/S2xmean)
-Trans_y = (S1ymean/S2ymean)
-Trans_z = (S1zmean/S2zmean)
-print('X Axis Transmissibility =', '%.5f'%  Trans_x,)
-print('Y Axis Transmissibility =', '%.5f'%  Trans_y,)
-print('Z Axis Transmissibility =', '%.5f'%  Trans_z,)
-
-# Difference in arrays (vector)
-# Looking at difference by vector, then averaging 
-Xdiff = Sensor2x_g - Sensor1x_g
-Ydiff = Sensor2y_g - Sensor1y_g
-Zdiff = Sensor2z_g - Sensor1z_g
-Xdiff_avg = np.mean(Xdiff)
-Ydiff_avg = np.mean(Ydiff)
-Zdiff_avg = np.mean(Zdiff)
-#print('Avg diff. of X Axis =', '%.5f'% Xdiff_avg,'G')
-#print('Avg diff. of Y Axis =', '%.5f'% Ydiff_avg,'G')
-#print('Avg diff. of Z Axis =', '%.5f'% Zdiff_avg,'G')
-# looking at % difference of vectors
-Xpd = np.mean(Xdiff/Sensor2x_g)*100  
-Ypd = np.mean(Ydiff/Sensor2y_g)*100
-Zpd = np.mean(Zdiff/Sensor2z_g)*100
-#print('Avg %\ diff. of X Axis =', '%.5f'% Xpd,'G')
-#print('Avg %\ diff. of Y Axis =', '%.5f'% Ypd,'G')
-#print('Avg %\ diff. of Z Axis =', '%.5f'% Zpd,'G')
+#Trans_x = (S1xmean/S2xmean)
+#Trans_y = (S1ymean/S2ymean)
+#Trans_z = (S1zmean/S2zmean)
+#print('X Axis Transmissibility =', '%.5f'%  Trans_x,)
+#print('Y Axis Transmissibility =', '%.5f'%  Trans_y,)
+#print('Z Axis Transmissibility =', '%.5f'%  Trans_z,)
 
 #Additonal statistics
-#S1yMedian = np.median(Sensor1y_g)
-#S2yMedian = np.median(Sensor2y_g)
-#print('Sensor 1 Y Axis Median =', '%.5f'%  S1yMedian, 'G')
-#print('Sensor 2 Y Axis Median =', '%.5f'%  S2yMedian, 'G')
 S1yP2P = S1yMAX - S1yMIN
 S2yP2P = S2yMAX - S1yMIN
 print('Sensor 1 Y Total Range =', '%.5f'%  S1yP2P, 'G')
 print('Sensor 2 Y Total Range =', '%.5f'%  S2yP2P, 'G')
-S1vs2P2PY = ((S2yP2P-S1yP2P)/S2yP2P)*100
-print('%.3f'% S1vs2P2PY,'% Reduction Y Axis P2P')
+#S1vs2P2PY = ((S2yP2P-S1yP2P)/S2yP2P)*100
+#print('%.3f'% S1vs2P2PY,'% Reduction Y Axis P2P')
 S1xP2P = S1xMAX - S1xMIN
 S2xP2P = S2xMAX - S1xMIN
 print('Sensor 1 X Total Range =', '%.5f'%  S1xP2P, 'G')
 print('Sensor 2 X Total Range =', '%.5f'%  S2xP2P, 'G')
-S1vs2P2PX = ((S2xP2P-S1xP2P)/S2xP2P)*100
-print('%.3f'% S1vs2P2PX,'% Reduction X Axis P2P')
-S1zP2P = S1zMAX - S1zMIN
-S2zP2P = S2zMAX - S1zMIN
-print('Sensor 1 Z Total Range =', '%.5f'%  S1zP2P, 'G')
-print('Sensor 2 Z Total Range =', '%.5f'%  S2zP2P, 'G')
-S1vs2P2PZ = ((S2zP2P-S1zP2P)/S2zP2P)*100
-print('%.3f'% S1vs2P2PZ,'% Reduction Z Axis P2P')
+#S1vs2P2PX = ((S2xP2P-S1xP2P)/S2xP2P)*100
+#print('%.3f'% S1vs2P2PX,'% Reduction X Axis P2P')
+#S1zP2P = S1zMAX - S1zMIN
+#S2zP2P = S2zMAX - S1zMIN
+#print('Sensor 1 Z Total Range =', '%.5f'%  S1zP2P, 'G')
+#print('Sensor 2 Z Total Range =', '%.5f'%  S2zP2P, 'G')
+#S1vs2P2PZ = ((S2zP2P-S1zP2P)/S2zP2P)*100
+#print('%.3f'% S1vs2P2PZ,'% Reduction Z Axis P2P')
 
 #RMS 
 S1xRMS = math.sqrt(np.sum(Sensor1x_g**2)/len(time))
 S2xRMS = math.sqrt(np.sum(Sensor2x_g**2)/len(time))
 print('Sensor 1 X Axis RMS =', '%.5f'%  S1xRMS, 'G')
 print('Sensor 2 X Axis RMS =', '%.5f'%  S2xRMS, 'G')
-S1vs2RMSX = ((S2xRMS-S1xRMS)/S2xRMS)*100
-print('%.3f'% S1vs2RMSX,'% Reduction RMS X Axis')
+S1vs2RMSX = ((S1xRMS-S2xRMS)/S2xRMS)*100
+if S1vs2RMSX > 0:
+    print('%.3f'% abs(S1vs2RMSX),'% Increase RMS X Axis')
+else: print('%.3f'% abs(S1vs2RMSX),'% Reduction RMS X Axis') 
 S1yRMS = math.sqrt(np.sum(Sensor1y_g**2)/len(time))
 S2yRMS = math.sqrt(np.sum(Sensor2y_g**2)/len(time))
 print('Sensor 1 Y Axis RMS =', '%.5f'%  S1yRMS, 'G')
 print('Sensor 2 Y Axis RMS =', '%.5f'%  S2yRMS, 'G')
-S1vs2RMSY = ((S2yRMS-S1yRMS)/S2yRMS)*100
-print('%.3f'% S1vs2RMSY,'% Reduction RMS Y Axis')
-S1zRMS = math.sqrt(np.sum(Sensor1z_g**2)/len(time))
-S2zRMS = math.sqrt(np.sum(Sensor2z_g**2)/len(time))
-print('Sensor 1 Z Axis RMS =', '%.5f'%  S1zRMS, 'G')
-print('Sensor 2 Z Axis RMS =', '%.5f'%  S2zRMS, 'G')
-S1vs2RMSZ = ((S2zRMS-S1zRMS)/S2zRMS)*100
-print('%.3f'% S1vs2RMSZ,'% Reduction RMS Z Axis')
+S1vs2RMSY = ((S1yRMS-S2yRMS)/S2yRMS)*100
+if S1vs2RMSY > 0:
+    print('%.3f'% abs(S1vs2RMSY),'% Increase RMS Y Axis')
+else:  print('%.3f'% abs(S1vs2RMSY),'% Reduction RMS Y Axis')     
+#S1zRMS = math.sqrt(np.sum(Sensor1z_g**2)/len(time))
+#S2zRMS = math.sqrt(np.sum(Sensor2z_g**2)/len(time))
+#print('Sensor 1 Z Axis RMS =', '%.5f'%  S1zRMS, 'G')
+#print('Sensor 2 Z Axis RMS =', '%.5f'%  S2zRMS, 'G')
+#S1vs2RMSZ = ((S2zRMS-S1zRMS)/S2zRMS)*100
+#print('%.3f'% S1vs2RMSZ,'% Reduction RMS Z Axis')
 
-# Absolute Values of Axis Data
+# Absolute Values of Axis Data [array]
 Sensor1x_abs = np.absolute(Sensor1x_g)
 Sensor1y_abs = np.absolute(Sensor1y_g)
 Sensor1z_abs = np.absolute(Sensor1z_g)
@@ -256,20 +247,25 @@ Sensor1x_int1 = integrate.simps(Sensor1x_abs, time)
 print('Sensor 1 X Axis Accel. Integral','%.5f'% Sensor1x_int1)
 Sensor2x_int1 = np.sum(integrate.trapz(Sensor2x_abs, time))
 print('Sensor 2 X Axis Accel. Integral','%.5f'% Sensor2x_int1)
-S1vs2INTX = ((Sensor2x_int1-Sensor1x_int1)/Sensor2x_int1)*100 
+S1vs2INTX = ((Sensor1x_int1-Sensor2x_int1)/Sensor2x_int1)*100 
+if S1vs2INTX > 0:
+    print('%.3f'% abs(S1vs2INTX),'% Reduction Integral X Axis')
+else: print('%.3f'% abs(S1vs2INTX),'% Increase Integral X Axis') 
 print('%.5f'% S1vs2INTX,'% Reduction Integral X Axis')
 Sensor1y_int1 = integrate.simps(Sensor1y_abs, time)
 print('Sensor 1 Y Axis Accel. Integral','%.5f'% Sensor1y_int1)
 Sensor2y_int1 = integrate.simps(Sensor2y_abs, time)
 print('Sensor 2 Y Axis Accel. Integral','%.5f'% Sensor2y_int1)
-S1vs2INTY = ((Sensor2y_int1-Sensor1y_int1)/Sensor2y_int1)*100 
-print('%.5f'% S1vs2INTY,'% Reduction Integral Y Axis')
-Sensor1z_int1 = integrate.simps(Sensor1z_abs, time)
-print('Sensor 1 Z Axis Accel. Integral','%.5f'% Sensor1z_int1)
-Sensor2z_int1 = integrate.simps(Sensor2z_abs, time)
-print('Sensor 2 Z Axis Accel. Integral','%.5f'% Sensor2z_int1)
-S1vs2INTZ = ((Sensor2z_int1-Sensor1z_int1)/Sensor2z_int1)*100 
-print('%.5f'% S1vs2INTZ,'% Reduction Integral Z Axis')
+S1vs2INTY = ((Sensor1y_int1-Sensor2y_int1)/Sensor2y_int1)*100
+if S1vs2INTY > 0:
+    print('%.3f'% abs(S1vs2INTY),'% Reduction Integral Y Axis')
+else: print('%.3f'% abs(S1vs2INTY),'% Increase Integral Y Axis') 
+#Sensor1z_int1 = integrate.simps(Sensor1z_abs, time)
+#print('Sensor 1 Z Axis Accel. Integral','%.5f'% Sensor1z_int1)
+#Sensor2z_int1 = integrate.simps(Sensor2z_abs, time)
+#print('Sensor 2 Z Axis Accel. Integral','%.5f'% Sensor2z_int1)
+#S1vs2INTZ = ((Sensor2z_int1-Sensor1z_int1)/Sensor2z_int1)*100 
+#print('%.5f'% S1vs2INTZ,'% Reduction Integral Z Axis')
 
 #Acceleration values in m/s^2
 Gravity = 9.80665 
@@ -290,13 +286,11 @@ S1y_G_Hist = np.histogram(Sensor1y_Grav, bins = Discomfort_Vals)
 #===========================================================================================================
 #Create a Nice Table to see scalar values
 columns = ('Average(G)', 'MAX(G)', 'MIN(G)', 'Peak to Peak (G)', 'RMS', 'Integral')
-rows = ('Sensor 1 X(Upper)', 'Sensor 2 X(Lower)', 'Sensor 1 Y(Upper)', 'Sensor 2 Y(Lower)', 'Sensor 1 Z(Upper)', 'Sensor 2 Z(Lower)')
+rows = ('Sensor 1 X(Upper)', 'Sensor 2 X(Lower)', 'Sensor 1 Y(Upper)', 'Sensor 2 Y(Lower)')
 results = np.array([['%.5f'% S1xmean,'%.5f'%  S1xMAX,'%.5f'%  S1xMIN,'%.5f'% S1xP2P,'%.5f'% S1xRMS,'%.5f'% Sensor1x_int1], 
         ['%.5f'% S2xmean,'%.5f'%  S2xMAX,'%.5f'%  S2xMIN,'%.5f'% S2xP2P,'%.5f'% S2xRMS, '%.5f'% Sensor2x_int1 ],
         ['%.5f'% S1ymean,'%.5f'%  S1yMAX,'%.5f'%  S1yMIN,'%.5f'% S1yP2P,'%.5f'% S1yRMS, '%.5f'% Sensor1y_int1],
-        ['%.5f'% S2ymean,'%.5f'%  S2yMAX,'%.5f'%  S2yMIN,'%.5f'% S2yP2P,'%.5f'% S2yRMS, '%.5f'% Sensor2y_int1],
-        ['%.5f'% S1zmean,'%.5f'%  S1zMAX,'%.5f'%  S1zMIN,'%.5f'% S1zP2P,'%.5f'% S1zRMS, '%.5f'% Sensor1z_int1],
-        ['%.5f'% S2zmean,'%.5f'%  S2zMAX,'%.5f'%  S2zMIN,'%.5f'% S2zP2P,'%.5f'% S2zRMS, '%.5f'% Sensor2z_int1]])
+        ['%.5f'% S2ymean,'%.5f'%  S2yMAX,'%.5f'%  S2yMIN,'%.5f'% S2yP2P,'%.5f'% S2yRMS, '%.5f'% Sensor2y_int1]])
 df = pd.DataFrame(results, columns = columns, index = rows)
 df.to_csv(FN, sep='\t')
 fig, tx = plt.subplots()
@@ -471,7 +465,7 @@ Sensor2y_int2 = integrate.cumtrapz(Sensor2y_int1c, time[:-1])
 Sensor1z_int2 = integrate.cumtrapz(Sensor1z_int1c, time[:-1])
 Sensor2z_int2 = integrate.cumtrapz(Sensor2z_int1c, time[:-1])
 
-Sensor1x_abs.to_csv("Sensor1abs.csv")
+#Sensor1x_abs.to_csv("Sensor1abs.csv")
 
 Sensor1x_abs = Sensor1x_abs*32.2
 
