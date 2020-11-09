@@ -16,7 +16,7 @@ Yes = None
 
 ###############################################
 Sensor_select = 'Arduino'  #DTS or Arduino
-# what file do you want to analyze?
+# what file do you want to find calibration values for?
 File_path =  'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\Vibration Analysis\\Journeyman V2\\24 Aug 2020\\Data\\Jman V2 Cal.txt' 
 #File_path = 'D:\\DATA00.txt'  #  Cutthroat Data
 ################################################
