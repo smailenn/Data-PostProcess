@@ -1,3 +1,8 @@
+#Calibration file, for analyzing two stationary LIS3DH accelerometers and normalizing them 
+#Updated:  09 Nov 2020
+Version = 2.0
+#Produces txt file results for Main data analysis file
+
 #import libraries
 import pandas as pd
 import numpy as np
@@ -16,24 +21,22 @@ Yes = None
 
 ###############################################
 Sensor_select = 'Arduino'  #DTS or Arduino
-# what file do you want to find calibration values for?
-File_path =  'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\Vibration Analysis\\Journeyman V2\\24 Aug 2020\\Data\\Jman V2 Cal.txt' 
-#File_path = 'D:\\DATA00.txt'  #  Cutthroat Data
+# Data location for calibration values?
+File_path =  'C:\\Users\\smailen\\OneDrive - Quality Bicycle Products\Vibration Analysis\\Cutthroat V3\\24 Aug 2020\\Data\\Cutthroat V3 Cal.txt' 
 ################################################
 
 #Note this is typical layout, but you may have to adjust
 #Sensor 1 - upper sensor, at Handlebar/Seatpost/etc.
 #Sensor 2 - lower sensor, at Axle/s
 
-#Orientation of calculations, make sure sensors are calibrated to match - X is positive in front or rider, Y is positive above rider, Z is above to driveside
-
+#Orientation of calculations, make sure sensors are calibrated to match - X is positive in riding direction (front of rider), Y is positive above rider, Z is normal to driveside
 
 #read the data into an array from text file
 if Sensor_select == Arduino:
     dataframe = pd.read_csv(File_path, sep=',')    
     print('Arduino data selected')
     filename = os.path.basename(File_path)
-    FN = os.path.splitext(filename)[0]
+    FN = os.path.splitext(filename)[0]+' values'
     #dataframe.info()
     #print(dataframe)
 elif Sensor_select == DTS:
@@ -49,7 +52,7 @@ else:
 
 # Create Text file of results for record
 f = open('{}.txt' .format(FN), "w")    
-    
+
 #Seperate data into column arrays
 #For Arduino type data logger
 if Sensor_select == Arduino:
@@ -78,11 +81,16 @@ if Sensor_select == Arduino:
     time = time/1000000 #convert uS to S
 
 time_int = np.ediff1d(time)  # Find time intervals - this is array (time between measurements)
-time_int_avg = stats.trim_mean(time_int,0.1) # Trim time intervals of SD lag points, large time intervals during a SD write, this is scalar
-print('Time Interval Average =', "%.8f"% time_int_avg,'S')
+#time_int_avg = stats.trim_mean(time_int,0.1) # Trim time intervals of SD lag points, large time intervals during a SD write, this is scalar
+time_int_avg = np.mean(time_int)
+#print('Time Interval Average =', "%.8f"% time_int_avg,'S')
 time_Hz = 1/time_int_avg
 print('Sample Rate =', '%.2f'% time_Hz, 'Hz')
-f.write('Sample Rate (Hz) =' '%.2f'% time_Hz) 
+f.write('Sample Rate (Hz) ,' '%.2f'% time_Hz) 
+f.write('\n')
+total_time = len(time)/time_Hz
+print('Length of run =', len(time),'seconds')
+f.write('Length of run (sec) ,' '%.2f'% total_time)
 f.write('\n')
 
 #re-orientate if necessary 
@@ -92,14 +100,12 @@ if Sensor_select == Arduino:
     print('data calibrated')
     #Orientate sensors
     Sensor1x_g = Sensor1xRaw
-    Sensor1y_g = Sensor1yRaw*Cd
+    Sensor1y_g = Sensor1yRaw
     Sensor1z_g = Sensor1zRaw*Cd
     Sensor2x_g = Sensor2xRaw
-    Sensor2y_g = Sensor2yRaw*Cd
+    Sensor2y_g = Sensor2yRaw
     Sensor2z_g = Sensor2zRaw*Cd
     print('data orientated + converted')
-
-
 
 #Calibrate ============================================================================================================
 # Find Average of sensor data
@@ -109,42 +115,42 @@ S1xmean = np.mean(Sensor1x_g)
 S2xmean = np.mean(Sensor2x_g)    
 S1zmean = np.mean(Sensor1z_g)
 S2zmean = np.mean(Sensor2z_g)  
-print('Sensor 1 X Axis Average = ', '%.5f'% S1xmean, 'm/s^2')
-print('Sensor 1 Y Axis Average = ', '%.5f'% S1ymean, 'm/s^2')
-print('Sensor 1 Z Axis Average = ', '%.5f'% S1zmean, 'm/s^2')
-print('Sensor 2 X Axis Average = ', '%.5f'% S2xmean, 'm/s^2G')
-print('Sensor 2 Y Axis Average = ', '%.5f'% S2ymean, 'm/s^2')
-print('Sensor 2 Z Axis Average = ', '%.5f'% S2zmean, 'm/s^2')
-f.write('Sensor 1 X Axis Average (m/s^2) =' '%.5f'% S1xmean)
+print('Sensor 1 X Axis Average , ', '%.5f'% S1xmean, 'm/s^2')
+print('Sensor 1 Y Axis Average , ', '%.5f'% S1ymean, 'm/s^2')
+print('Sensor 1 Z Axis Average , ', '%.5f'% S1zmean, 'm/s^2')
+print('Sensor 2 X Axis Average , ', '%.5f'% S2xmean, 'm/s^2G')
+print('Sensor 2 Y Axis Average , ', '%.5f'% S2ymean, 'm/s^2')
+print('Sensor 2 Z Axis Average , ', '%.5f'% S2zmean, 'm/s^2')
+f.write('Sensor 1 X Axis Average (m/s^2) ,' '%.5f'% S1xmean)
 f.write('\n')
-f.write('Sensor 1 Y Axis Average (m/s^2) =' '%.5f'% S1ymean)
+f.write('Sensor 1 Y Axis Average (m/s^2) ,' '%.5f'% S1ymean)
 f.write('\n')
-f.write('Sensor 1 Z Axis Average (m/s^2) =' '%.5f'% S1zmean)
+f.write('Sensor 1 Z Axis Average (m/s^2) ,' '%.5f'% S1zmean)
 f.write('\n')
-f.write('Sensor 2 X Axis Average (m/s^2) =' '%.5f'% S2xmean)
+f.write('Sensor 2 X Axis Average (m/s^2) ,' '%.5f'% S2xmean)
 f.write('\n')
-f.write('Sensor 2 Y Axis Average (m/s^2) =' '%.5f'% S2ymean)
+f.write('Sensor 2 Y Axis Average (m/s^2) ,' '%.5f'% S2ymean)
 f.write('\n')
-f.write('Sensor 2 Z Axis Average (m/s^2) =' '%.5f'% S2zmean)
+f.write('Sensor 2 Z Axis Average (m/s^2) ,' '%.5f'% S2zmean)
 f.write('\n')
 
 # Difference between between Accelerometers 
 S1diffS2x = abs(S1xmean - S2xmean)
 S1diffS2y = abs(S1ymean - S2ymean)
 S1diffS2z = abs(S1zmean - S2zmean)
-print('Sensor 1 & 2 X Axis difference = ', '%.5f'% S1diffS2x, 'm/s^2')
-print('Sensor 1 & 2 Y Axis difference = ', '%.5f'% S1diffS2y, 'm/s^2')
-print('Sensor 1 & 2 Z Axis difference = ', '%.5f'% S1diffS2z, 'm/s^2')
-f.write('Sensor 1 & 2 X Axis difference (m/s^2) = ' '%.5f'% S1diffS2x)
+print('Sensor 1 & 2 X Axis difference , ', '%.5f'% S1diffS2x, 'm/s^2')
+print('Sensor 1 & 2 Y Axis difference , ', '%.5f'% S1diffS2y, 'm/s^2')
+print('Sensor 1 & 2 Z Axis difference , ', '%.5f'% S1diffS2z, 'm/s^2')
+f.write('Sensor 1 & 2 X Axis difference (m/s^2) , ' '%.5f'% S1diffS2x)
 f.write('\n')
-f.write('Sensor 1 & 2 Y Axis difference (m/s^2)= ' '%.5f'% S1diffS2y)
+f.write('Sensor 1 & 2 Y Axis difference (m/s^2), ' '%.5f'% S1diffS2y)
 f.write('\n')
-f.write('Sensor 1 & 2 Z Axis difference (m/s^2)= ' '%.5f'% S1diffS2z)
+f.write('Sensor 1 & 2 Z Axis difference (m/s^2), ' '%.5f'% S1diffS2z)
 f.write('\n')
 
 #Acceleration values in m/s^2
 #Accels should be measuring with 
-Gravity = 9.80665 
+Gravity = -9.80665 
 
 #Calibration offsets
 S1xCalib = 0 - S1xmean
@@ -153,23 +159,23 @@ S1zCalib = 0 - S1zmean
 S2xCalib = 0 - S2xmean
 S2yCalib = Gravity - S2ymean
 S2zCalib = 0 - S2zmean
-print('Sensor 1 X Axis Calibration value = ', '%.5f'% S1xCalib, 'm/s^2')
-print('Sensor 1 Y Axis Calibration value = ', '%.5f'% S1yCalib, 'm/s^2')
-print('Sensor 1 Z Axis Calibration value = ', '%.5f'% S1zCalib, 'm/s^2')
-print('Sensor 2 X Axis Calibration value = ', '%.5f'% S2xCalib, 'm/s^2')
-print('Sensor 2 Y Axis Calibration value = ', '%.5f'% S2yCalib, 'm/s^2')
-print('Sensor 2 Z Axis Calibration value = ', '%.5f'% S2zCalib, 'm/s^2')
-f.write('Sensor 1 X Axis Calibration value = ' '%.5f'% S1xCalib)
+print('Sensor 1 X Axis Calibration value , ', '%.5f'% S1xCalib, 'm/s^2')
+print('Sensor 1 Y Axis Calibration value , ', '%.5f'% S1yCalib, 'm/s^2')
+print('Sensor 1 Z Axis Calibration value , ', '%.5f'% S1zCalib, 'm/s^2')
+print('Sensor 2 X Axis Calibration value , ', '%.5f'% S2xCalib, 'm/s^2')
+print('Sensor 2 Y Axis Calibration value , ', '%.5f'% S2yCalib, 'm/s^2')
+print('Sensor 2 Z Axis Calibration value , ', '%.5f'% S2zCalib, 'm/s^2')
+f.write('Sensor 1 X Axis Calibration value , ' '%.5f'% S1xCalib)
 f.write('\n')
-f.write('Sensor 1 Y Axis Calibration value = ' '%.5f'% S1yCalib)
+f.write('Sensor 1 Y Axis Calibration value , ' '%.5f'% S1yCalib)
 f.write('\n')
-f.write('Sensor 1 Z Axis Calibration value = ' '%.5f'% S1zCalib)
+f.write('Sensor 1 Z Axis Calibration value , ' '%.5f'% S1zCalib)
 f.write('\n')
-f.write('Sensor 2 X Axis Calibration value = ' '%.5f'% S2xCalib)
+f.write('Sensor 2 X Axis Calibration value , ' '%.5f'% S2xCalib)
 f.write('\n')
-f.write('Sensor 2 Y Axis Calibration value = ' '%.5f'% S2yCalib)
+f.write('Sensor 2 Y Axis Calibration value , ' '%.5f'% S2yCalib)
 f.write('\n')
-f.write('Sensor 2 Z Axis Calibration value = ' '%.5f'% S2zCalib)
+f.write('Sensor 2 Z Axis Calibration value , ' '%.5f'% S2zCalib)
 f.write('\n')
 
 # Check calibration worked properly

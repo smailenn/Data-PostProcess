@@ -52,6 +52,10 @@ elif Sensor_select == DTS:
     #print(dataframe_DTS)
 else:
     print("No Data present")
+
+# Create Text file of results for record
+f = open('{}_Results.txt' .format(FN), "w")
+###############################################
     
 #Seperate data into column arrays
 #For Arduino type data logger
@@ -83,23 +87,28 @@ if Sensor_select == Arduino:
     time = time/1000000 #convert uS to S
 
 time_int = np.ediff1d(time)  # Find time intervals - this is array (time between measurements)
-time_int_avg = stats.trim_mean(time_int,0.1) # Trim time intervals of SD lag points, large time intervals during a SD write, this is scalar
+#time_int_avg = stats.trim_mean(time_int,0.1) # Trim time intervals of SD lag points, large time intervals during a SD write, this is scalar
+time_int_avg = np.mean(time_int)
 #print('Time Interval Average =', "%.8f"% time_int_avg,'S')
 time_Hz = 1/time_int_avg
 print('Sample Rate =', '%.2f'% time_Hz, 'Hz')
+print('Length of run =', len(time),'seconds')
+
 #savetxt('time_int.csv', time_int, delimiter=',')  # save Time Interval Array as CSV for review if needed
 #print(len(time))
 
 #Calibrate, orientate, and Normalize readings to G's
 #Calculate offset values from calibration test at beginning of test runs, ideally done at same time as testing
 if Sensor_select == Arduino: 
+
+    
     #accel_g_unit = (accel_raw_scale_pos - accel_raw_scale_neg)/accel_range
-    Sensor1x_offset = 63.5 
-    Sensor1y_offset = -692 
-    Sensor1z_offset = -22.6
-    Sensor2x_offset = 12.6
-    Sensor2y_offset = -769
-    Sensor2z_offset = 98
+    Sensor1x_offset = -0.02300
+    Sensor2x_offset = -0.17582
+    Sensor1y_offset = 0.70788
+    Sensor2y_offset = 0.62561
+    Sensor1z_offset = 0.25551
+    Sensor2z_offset = 0.54953
     Cd = -1 #multiply raw data by this to change trajectory to match bicycle Orientation
     print('data calibrated')
     #Orientate sensors, calibrate, and convert to G's
@@ -109,13 +118,13 @@ if Sensor_select == Arduino:
     #Sensor2x_g = ((Sensor2xRaw + Sensor2x_offset)*(accel_range/accel_raw_scale_pos))
     #Sensor2y_g = (((Sensor2yRaw + Sensor2y_offset)*(accel_range/accel_raw_scale_pos))+1)*Cd
     #Sensor2z_g = ((Sensor2zRaw + Sensor2z_offset)*(accel_range/accel_raw_scale_pos))*Cd
-    Sensor1x_g = Sensor1xRaw
-    Sensor1y_g = Sensor1yRaw
-    Sensor1z_g = Sensor1zRaw
-    Sensor2x_g = Sensor2xRaw
-    Sensor2y_g = Sensor2yRaw
-    Sensor2z_g = Sensor2zRaw
-
+    Sensor1x_g = Sensor1xRaw + Sensor1x_offset
+    Sensor1y_g = Sensor1yRaw + Sensor1y_offset
+    Sensor1z_g = Sensor1zRaw*Cd + Sensor1z_offset
+    Sensor2x_g = Sensor2xRaw + Sensor2x_offset
+    Sensor2y_g = Sensor2yRaw + Sensor2y_offset
+    Sensor2z_g = Sensor2zRaw*Cd + Sensor2z_offset
+    print('data calibrated')
     print('data orientated + converted')
 
 #If needed trim the arrays for bad/false/faulty data
@@ -132,7 +141,7 @@ if Trim_data == 'Yes':
     Sensor2y_g = Sensor2y_g[trim_beg:trim_end]
     Sensor2z_g = Sensor2z_g[trim_beg:trim_end]
     trim_size = trim_end - trim_beg
-    print('Size of array after trim =', trim_size,'samples')
+    print('Size of trimmed array =', trim_size,'samples')
 else:
     print('Data not trimmed')
     print('Size of Data Array/s =',len(time))
